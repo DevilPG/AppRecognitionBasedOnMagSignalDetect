@@ -31,16 +31,19 @@ def STFT(signal, sample_rate=16000, frame_size=0.025, frame_stride=0.01, winfunc
     indices = np.tile(np.arange(0, frame_length), (num_frames, 1)) + \
             np.tile(np.arange(0, num_frames * frame_step, frame_step), (frame_length, 1)).T
     frames = pad_signal[indices.astype(np.int32, copy=False)]
+    
     # Get windowed frames
-    frames *= winfunc(frame_length)
-    print(frames.shape)
+    # frames *= winfunc(frame_length)
+
     # Compute the one-dimensional n-point discrete Fourier Transform(DFT) of
     # a real-valued array by means of an efficient algorithm called Fast Fourier Transform (FFT)
     complex_frames = np.fft.fft(frames)
+    
+    # print(complex_frames[0])
     mag_frames = np.absolute(complex_frames)
     # Compute power spectrum
     pow_frames = (1.0 / NFFT) * ((mag_frames) ** 2)
-    return pow_frames
+    return mag_frames[:,:NFFT]
 
 def pca(X,k):
     sample_num, feature_num = X.shape
@@ -101,9 +104,10 @@ def dataprocess(filename):
     M_min=min(M)
     for i in range(0,n):
         M_normal.append((M[i]-M_min)/(M_max-M_min))
-    
     sample_rate=100
-    mag_spec=STFT(M_normal,sample_rate,0.5,0.2,np.hamming,50)
+    # print(M_normal[0:50])
+    # print(np.absolute(np.fft.fft(M_normal[0:50])))
+    mag_spec=STFT(M_normal,sample_rate,0.5,0.2,np.hamming,26)
     return mag_spec
     
 
@@ -160,20 +164,44 @@ if __name__ == '__main__':
     M1=dataprocess("data1/Chorme.txt")
     M2=dataprocess("data1/Email.txt")
     M3=dataprocess("data1/PPT.txt")
-    # print(M1.shape)
     # M4=dataprocess("rawdata/PPT.txt")
     # M5=dataprocess("rawdata/Netease.txt")
     
-    # pcadata=np.concatenate((M1,M2,M3),axis=0)
-    
-    # pca_mag,PCA_Main_Features = pca(np.array(pcadata), 10)
+    # x1=0
+    # for i in range(len(M1)):
+    #     x1+=M1[i][0]
+    # x1=x1/len(M1)
+  
+    pcadata=np.concatenate((M1,M2,M3),axis=0)
+    # print(pcadata)
+    # print(pcadata.shape)
+    pca_mag,PCA_Main_Features = pca(np.array(pcadata), 10)
     # print(PCA_Main_Features.shape)
     
+    M1 = M1[0:int((len(M1)/10))*10,:]
+    M2 = M2[0:int((len(M2)/10))*10,:]
+    M3 = M3[0:int((len(M3)/10))*10,:]
+    M11=[]
+    M22=[]
+    M33=[]
+    print(M1)
+    
+    for k in range(int(len(M1)/10)):
+        M11.append(trained_pca(M1[k:k+10,:], PCA_Main_Features))
+        
+    for k in range(int(len(M2)/10)):
+        M22.append(trained_pca(M2[k:k+10,:], PCA_Main_Features))
+        
+    for k in range(int(len(M3)/10)):
+        M33.append(trained_pca(M3[k:k+10,:], PCA_Main_Features))
+        
+       
+        
     # M1=trained_pca(M1, PCA_Main_Features)
     # M2=trained_pca(M2, PCA_Main_Features)
     # M3=trained_pca(M3, PCA_Main_Features)
-    # # M4=trained_pca(M4, PCA_Main_Features)
-    # # M5=trained_pca(M5, PCA_Main_Features)
+    # M4=trained_pca(M4, PCA_Main_Features)
+    # M5=trained_pca(M5, PCA_Main_Features)
     
     
     # with open("results/pca_mainfeature_matrix1.txt","w") as f3:
@@ -182,21 +210,19 @@ if __name__ == '__main__':
     #             f3.write(str(PCA_Main_Features[i][j])+' ')
     #         f3.write("\n")
     
-    # with open("data1/chorm_result.txt","w") as f3:
-    #     for i in range(0,len(M1)):
-    #         f3.write(str(M1[i])+'\n')
-    # with open("data1/email_result.txt","w") as f3:
-    #     for i in range(0,len(M2)):
-    #         f3.write(str(M2[i])+'\n')
-    # with open("data1/ppt_result.txt","w") as f3:
-    #     for i in range(0,len(M3)):
-    #         f3.write(str(M3[i])+'\n')
-    # with open("results/PPT.txt","w") as f3:
-    #     for i in range(0,len(M4)):
-    #         f3.write(str(M4[i])+'\n')
-    # with open("results/Netease.txt","w") as f3:
-    #     for i in range(0,len(M5)):
-    #         f3.write(str(M5[i])+'\n')
+    with open("data1/chorm_result.txt","w") as f3:
+        for i in range(0,len(M11)):
+            for j in range(0,10):
+                f3.write(str(M11[i][j])+'\n')
+    with open("data1/email_result.txt","w") as f3:
+        for i in range(0,len(M22)):
+            for j in range(0,10):
+                f3.write(str(M22[i][j])+'\n')
+    with open("data1/ppt_result.txt","w") as f3:
+        for i in range(0,len(M33)):
+            for j in range(0,10):
+                f3.write(str(M33[i][j])+'\n')
+    
     
    
     
